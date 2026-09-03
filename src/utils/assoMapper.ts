@@ -2,6 +2,39 @@ import type { Bond, BondType, Person } from '../types/orb'
 
 export type GedcomRole = 'FRIEND' | 'GODP' | 'WITN' | 'CLERGY' | 'PARENT' | 'OTHER'
 
+interface BondMapping {
+  role: GedcomRole
+  phrase?: string
+}
+
+const BOND_MAP: Record<BondType, BondMapping> = {
+  bond_of_trust: { role: 'FRIEND' },
+  chosen_family: { role: 'OTHER', phrase: 'Chosen family' },
+  life_partner: { role: 'OTHER', phrase: 'Life partner' },
+  shared_life: { role: 'OTHER', phrase: 'Shared life' },
+}
+
+const EXACT_ROLE_MAP: Record<string, BondType> = {
+  FRIEND: 'bond_of_trust',
+  GODP: 'chosen_family',
+}
+
+const PHRASE_TO_BOND: [string[], BondType][] = [
+  [['partner', 'spouse'], 'life_partner'],
+  [['chosen', 'aunt', 'uncle'], 'chosen_family'],
+  [['shared', 'housemate'], 'shared_life'],
+]
+
+function phraseToBondType(phrase: string): BondType {
+  const lower = phrase.toLowerCase()
+  for (const [keywords, type] of PHRASE_TO_BOND) {
+    if (keywords.some(k => lower.includes(k))) return type
+  }
+  return 'chosen_family'
+}
+
+export type GedcomRole = 'FRIEND' | 'GODP' | 'WITN' | 'CLERGY' | 'PARENT' | 'OTHER'
+
 const BOND_TO_ROLE: Record<BondType, { role: GedcomRole; phrase?: string }> = {
   bond_of_trust: { role: 'FRIEND' },
   chosen_family: { role: 'OTHER', phrase: 'Chosen family' },
@@ -47,7 +80,7 @@ export function assoLinesToBond(
     else if (level === 3 && tag === 'PHRASE') phrase = value
     else if (level === 2 && tag === 'NOTE') note = value
   }
-  if (!toId) return null
+  let type: BondType = EXACT_ROLE_MAP[role] ?? (role === 'OTHER' ? phraseToBondType(phrase) : 'bond_of_trust')
   let type: BondType = 'bond_of_trust'
   if (ROLE_TO_BOND[role]) type = ROLE_TO_BOND[role]
   else if (role === 'OTHER') {
