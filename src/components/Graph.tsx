@@ -5,7 +5,13 @@ import * as THREE from 'three'
 import { useOrbStore } from '../hooks/useOrbStore'
 import { getLinkColor } from '../data/colors'
 import type { GraphNode, GraphLink } from '../types/orb'
+const textureCache = new Map<string, THREE.Texture>()
 
+const QUALITY = {
+  low:    { bloom: 0.6, charge: -70,  maxDist: 280, particles: 1, warmup: 40, cooldown: 60, pixRatio: 1.25, antialias: false, power: 'low-power' as GPUPowerPreference },
+  medium: { bloom: 1.1, charge: -90,  maxDist: 400, particles: 3, warmup: 80, cooldown: 120, pixRatio: 1.75, antialias: true,  power: 'high-performance' as GPUPowerPreference },
+  high:   { bloom: 1.5, charge: -110, maxDist: 400, particles: 3, warmup: 80, cooldown: 120, pixRatio: 2,    antialias: true,  power: 'high-performance' as GPUPowerPreference },
+} as const
 const textureLoader = new THREE.TextureLoader()
 const textureCache = new Map<string, THREE.Texture>()
 const ringGeo = new THREE.RingGeometry(6.5, 8.5, 32)
