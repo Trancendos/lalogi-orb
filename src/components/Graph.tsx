@@ -50,7 +50,9 @@ export default function Graph() {
       (p: any) => p.constructor?.name === 'UnrealBloomPass'
     )
     if (existing) return
-    const strength = quality === 'low' ? 0.6 : quality === 'medium' ? 1.1 : 1.5
+    const cfg = QUALITY[quality]
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), cfg.bloom, 0.55, 0.15)
+    composer.addPass(bloomPass)
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       strength,
@@ -73,7 +75,8 @@ export default function Graph() {
     }
     const chargeForce = fg.d3Force('charge') as any
     if (chargeForce) {
-      const strength = quality === 'low' ? -70 : quality === 'medium' ? -90 : -110
+    const cfg = QUALITY[quality]
+    if (chargeForce) chargeForce.strength(cfg.charge).distanceMax(cfg.maxDist)
       chargeForce.strength(strength).distanceMax(quality === 'low' ? 280 : 400)
     }
     const centerForce = fg.d3Force('center') as any
