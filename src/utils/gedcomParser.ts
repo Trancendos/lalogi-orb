@@ -4,6 +4,34 @@
 import type { Person, BloodRelation, OrbData, Bond } from '../types/orb'
 import { assoLinesToBond } from './assoMapper'
 
+const GEDCOM_LINE = /^(\d+)\s+(@[^@]+@)?\s*(\w+)(?:\s+(.*))?$/
+const cleanId = (raw: string) => raw.replace(/@/g, '').trim()
+
+interface RawIndi {
+  id: string
+  name?: string
+  birthDate?: string
+  deathDate?: string
+  sex?: string
+  famc: string[]
+  fams: string[]
+}
+
+interface RawFam {
+  id: string
+  husb?: string
+  wife?: string
+  children: string[]
+}
+
+function parseGedcomLines(gedcomText: string) {
+  return gedcomText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').map(l => l.trimEnd())
+}
+ * Lightweight GEDCOM parser for Lalogi Orb (INDI + FAM + basic ASSO).
+ */
+import type { Person, BloodRelation, OrbData, Bond } from '../types/orb'
+import { assoLinesToBond } from './assoMapper'
+
 interface RawIndi {
   id: string
   name?: string
@@ -75,7 +103,9 @@ export function parseGedcom(gedcomText: string): Partial<OrbData> {
     }
   }
 
-  const persons: Person[] = [...individuals.values()].map((i) => ({
+  const idCounter = { n: 0 }
+  const nextId = () => `br-${++idCounter.n}`
+  const bloodRelations: BloodRelation[] = []
     id: i.id,
     name: i.name || i.id,
     birthDate: i.birthDate || null,
