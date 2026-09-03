@@ -1,0 +1,12 @@
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -36,8 +36,9 @@ export default defineConfig({
+             },
+             workbox: {
+               // Skip terser minify of the service worker (avoids Termux early exit)
+-              mode: 'development',
++              // FIXED: Use debug: true instead of mode: 'development' to properly skip terser minification
++              debug: true,
+               globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
+               maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+               cleanupOutdatedCaches: true,
