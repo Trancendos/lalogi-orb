@@ -8,6 +8,9 @@ import type { GraphNode, GraphLink } from '../types/orb'
 
 const textureLoader = new THREE.TextureLoader()
 const textureCache = new Map<string, THREE.Texture>()
+const ringGeo = new THREE.RingGeometry(6.5, 8.5, 32)
+const sphereGeo = new THREE.SphereGeometry(5, 16, 16)
+const textureCache = new Map<string, THREE.Texture>()
 
 function getTexture(url: string): THREE.Texture {
   if (textureCache.has(url)) return textureCache.get(url)!
