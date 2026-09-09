@@ -9,11 +9,30 @@ const modes: { id: ViewMode; label: string }[] = [
   { id: 'bonds', label: 'Bonds Only' },
 ]
 
-export default function Controls() {
-  const { viewMode, setViewMode, resetToSample, importOrbData } = useOrbStore()
-  const fileRef = useRef<HTMLInputElement>(null)
+const btn: React.CSSProperties = {
+  background: 'rgba(10, 12, 20, 0.75)',
+  backdropFilter: 'blur(8px)',
+  color: '#94a3b8',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 10,
+  padding: '8px 14px',
+  fontSize: 13,
+  cursor: 'pointer',
+}
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+export default function Controls() {
+  const {
+    viewMode,
+    setViewMode,
+    resetToSample,
+    startEmpty,
+    exportJson,
+    importOrbData,
+  } = useOrbStore()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const jsonRef = useRef<HTMLInputElement>(null)
+
+  const handleGedcom = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     try {
@@ -21,7 +40,21 @@ export default function Controls() {
       importOrbData(data)
     } catch (err) {
       console.error('GEDCOM import failed', err)
-      alert('Could not parse that GEDCOM file. Check the console for details.')
+      alert('Could not parse that GEDCOM file.')
+    }
+    e.target.value = ''
+  }
+
+  const handleJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      importOrbData(data)
+    } catch (err) {
+      console.error('JSON import failed', err)
+      alert('Could not import that backup file.')
     }
     e.target.value = ''
   }
@@ -70,19 +103,7 @@ export default function Controls() {
         ))}
       </div>
 
-      <button
-        onClick={() => fileRef.current?.click()}
-        style={{
-          background: 'rgba(10, 12, 20, 0.75)',
-          backdropFilter: 'blur(8px)',
-          color: '#94a3b8',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 10,
-          padding: '8px 14px',
-          fontSize: 13,
-          cursor: 'pointer',
-        }}
-      >
+      <button onClick={() => fileRef.current?.click()} style={btn}>
         Import GEDCOM
       </button>
       <input
@@ -90,23 +111,37 @@ export default function Controls() {
         type="file"
         accept=".ged,.gedcom,text/plain"
         style={{ display: 'none' }}
-        onChange={handleFile}
+        onChange={handleGedcom}
       />
 
+      <button onClick={() => jsonRef.current?.click()} style={btn}>
+        Import Backup
+      </button>
+      <input
+        ref={jsonRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={handleJson}
+      />
+
+      <button onClick={exportJson} style={btn}>
+        Export Backup
+      </button>
+
       <button
-        onClick={resetToSample}
-        style={{
-          background: 'rgba(10, 12, 20, 0.75)',
-          backdropFilter: 'blur(8px)',
-          color: '#94a3b8',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 10,
-          padding: '8px 14px',
-          fontSize: 13,
-          cursor: 'pointer',
+        onClick={() => {
+          if (confirm('Clear the constellation so you can build your own from scratch?')) {
+            startEmpty()
+          }
         }}
+        style={btn}
       >
-        Reset Sample
+        Start Empty
+      </button>
+
+      <button onClick={resetToSample} style={btn}>
+        Sample Demo
       </button>
     </div>
   )

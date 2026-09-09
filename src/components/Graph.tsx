@@ -11,7 +11,8 @@ const textureCache = new Map<string, THREE.Texture>()
 
 const QUALITY = {
   low: {
-    bloom: 0.6,
+    bloom: 0.55,
+    bloomScale: 0.5,
     charge: -70,
     maxDist: 280,
     particles: 1,
@@ -22,10 +23,11 @@ const QUALITY = {
     power: 'low-power' as const,
   },
   medium: {
-    bloom: 1.1,
+    bloom: 1.0,
+    bloomScale: 0.5,
     charge: -90,
     maxDist: 400,
-    particles: 3,
+    particles: 2,
     warmup: 80,
     cooldown: 120,
     pixRatio: 1.75,
@@ -34,6 +36,7 @@ const QUALITY = {
   },
   high: {
     bloom: 1.5,
+    bloomScale: 1,
     charge: -110,
     maxDist: 400,
     particles: 3,
@@ -70,6 +73,7 @@ export default function Graph() {
   const [quality] = useState(detectQuality)
   const cfg = QUALITY[quality]
 
+  // Bloom at half-res on mobile tiers (~75% fewer fragment ops; looks the same on phone screens)
   useEffect(() => {
     const fg = fgRef.current
     if (!fg) return
@@ -79,14 +83,17 @@ export default function Graph() {
       (p: any) => p.constructor?.name === 'UnrealBloomPass'
     )
     if (existing) return
+
+    const w = window.innerWidth * cfg.bloomScale
+    const h = window.innerHeight * cfg.bloomScale
     const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      new THREE.Vector2(Math.max(1, w), Math.max(1, h)),
       cfg.bloom,
       0.55,
       0.15
     )
     composer.addPass(bloomPass)
-  }, [cfg.bloom])
+  }, [cfg.bloom, cfg.bloomScale])
 
   useEffect(() => {
     const fg = fgRef.current

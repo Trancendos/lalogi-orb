@@ -3,6 +3,13 @@ import type { OrbData, Person, Bond, ViewMode, GraphNode, GraphLink } from '../t
 import { sampleOrbData } from '../data/sampleData'
 import { loadOrbData, saveOrbData } from '../db/orbDb'
 
+const EMPTY_ORB: OrbData = {
+  version: '1.0',
+  persons: [],
+  bloodRelations: [],
+  bonds: [],
+}
+
 interface OrbState {
   data: OrbData
   viewMode: ViewMode
@@ -11,8 +18,11 @@ interface OrbState {
   setViewMode: (mode: ViewMode) => void
   selectPerson: (id: string | null) => void
   addBond: (bond: Bond) => void
+  addPerson: (person: Person) => void
   updatePerson: (id: string, updates: Partial<Person>) => void
   resetToSample: () => void
+  startEmpty: () => void
+  exportJson: () => void
   importOrbData: (partial: Partial<OrbData>) => void
   hydrateFromDb: () => Promise<void>
   getGraphData: () => { nodes: GraphNode[]; links: GraphLink[] }
@@ -39,6 +49,12 @@ export const useOrbStore = create<OrbState>()((set, get) => ({
     persist(next)
   },
 
+  addPerson: (person) => {
+    const next = { ...get().data, persons: [...get().data.persons, person] }
+    set({ data: next })
+    persist(next)
+  },
+
   updatePerson: (id, updates) => {
     const next = {
       ...get().data,
@@ -51,6 +67,23 @@ export const useOrbStore = create<OrbState>()((set, get) => ({
   resetToSample: () => {
     set({ data: sampleOrbData, selectedPersonId: null })
     persist(sampleOrbData)
+  },
+
+  startEmpty: () => {
+    set({ data: EMPTY_ORB, selectedPersonId: null })
+    persist(EMPTY_ORB)
+  },
+
+  exportJson: () => {
+    const blob = new Blob([JSON.stringify(get().data, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `lalogi-orb-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   },
 
   importOrbData: (partial) => {
@@ -68,7 +101,7 @@ export const useOrbStore = create<OrbState>()((set, get) => ({
   hydrateFromDb: async () => {
     try {
       const stored = await loadOrbData()
-      if (stored && stored.persons.length > 0) {
+      if (stored) {
         set({ data: stored, hydrated: true })
       } else {
         await saveOrbData(sampleOrbData)
