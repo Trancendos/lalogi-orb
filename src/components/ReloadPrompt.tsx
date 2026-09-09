@@ -1,18 +1,42 @@
-import { useRegisterSW } from 'virtual:pwa-register/react'
+import { useEffect, useState } from 'react'
 
+/**
+ * Soft PWA update banner. Never crashes the app if the virtual SW module is unavailable.
+ */
 export default function ReloadPrompt() {
-  const {
-    offlineReady: [offlineReady, setOfflineReady],
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(r) {
-      console.log('Service Worker registered:', r)
-    },
-    onRegisterError(error) {
-      console.error('Service Worker registration error:', error)
-    },
-  })
+  const [offlineReady, setOfflineReady] = useState(false)
+  const [needRefresh, setNeedRefresh] = useState(false)
+  const [updateFn, setUpdateFn] = useState<((reload?: boolean) => Promise<void>) | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const mod = await import('virtual:pwa-register/react')
+        if (cancelled) return
+        // Hook must run in a component — fall back to imperative registerSW
+        const { registerSW } = await import('virtual:pwa-register')
+        const updateSW = registerSW({
+          immediate: true,
+          onOfflineReady() {
+            if (!cancelled) setOfflineReady(true)
+          },
+          onNeedRefresh() {
+            if (!cancelled) setNeedRefresh(true)
+          },
+          onRegistered() {},
+          onRegisterError() {},
+        })
+        setUpdateFn(() => updateSW)
+        void mod
+      } catch {
+        // PWA virtual module missing or failed — app still works online
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (!offlineReady && !needRefresh) return null
 
@@ -46,7 +70,7 @@ export default function ReloadPrompt() {
       <div style={{ display: 'flex', gap: 8 }}>
         {needRefresh && (
           <button
-            onClick={() => updateServiceWorker(true)}
+            onClick={() => updateFn?.(true)}
             style={{
               background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
               color: 'white',

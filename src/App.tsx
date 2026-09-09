@@ -5,7 +5,16 @@ import ReloadPrompt from './components/ReloadPrompt'
 
 export default function App() {
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: '100dvh',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#030308',
+      }}
+    >
       <Graph />
       <Controls />
       <MemoryPanel />
@@ -14,12 +23,13 @@ export default function App() {
       <div
         style={{
           position: 'absolute',
-          bottom: 20,
-          left: 20,
-          color: 'rgba(148, 163, 184, 0.7)',
-          fontSize: 13,
+          bottom: 16,
+          left: 16,
+          color: 'rgba(148, 163, 184, 0.65)',
+          fontSize: 12,
           letterSpacing: 1,
           pointerEvents: 'none',
+          zIndex: 5,
         }}
       >
         LALOGI ORB · Family by Blood &amp; by Love
