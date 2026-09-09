@@ -1,39 +1,12 @@
 import type { Bond, BondType, Person } from '../types/orb'
 
-export type GedcomRole = 'FRIEND' | 'GODP' | 'WITN' | 'CLERGY' | 'PARENT' | 'OTHER'
-
-interface BondMapping {
-  role: GedcomRole
-  phrase?: string
-}
-
-const BOND_MAP: Record<BondType, BondMapping> = {
-  bond_of_trust: { role: 'FRIEND' },
-  chosen_family: { role: 'OTHER', phrase: 'Chosen family' },
-  life_partner: { role: 'OTHER', phrase: 'Life partner' },
-  shared_life: { role: 'OTHER', phrase: 'Shared life' },
-}
-
-const EXACT_ROLE_MAP: Record<string, BondType> = {
-  FRIEND: 'bond_of_trust',
-  GODP: 'chosen_family',
-}
-
-const PHRASE_TO_BOND: [string[], BondType][] = [
-  [['partner', 'spouse'], 'life_partner'],
-  [['chosen', 'aunt', 'uncle'], 'chosen_family'],
-  [['shared', 'housemate'], 'shared_life'],
-]
-
-function phraseToBondType(phrase: string): BondType {
-  const lower = phrase.toLowerCase()
-  for (const [keywords, type] of PHRASE_TO_BOND) {
-    if (keywords.some(k => lower.includes(k))) return type
-  }
-  return 'chosen_family'
-}
-
-export type GedcomRole = 'FRIEND' | 'GODP' | 'WITN' | 'CLERGY' | 'PARENT' | 'OTHER'
+export type GedcomRole =
+  | 'FRIEND'
+  | 'GODP'
+  | 'WITN'
+  | 'CLERGY'
+  | 'PARENT'
+  | 'OTHER'
 
 const BOND_TO_ROLE: Record<BondType, { role: GedcomRole; phrase?: string }> = {
   bond_of_trust: { role: 'FRIEND' },
@@ -45,6 +18,15 @@ const BOND_TO_ROLE: Record<BondType, { role: GedcomRole; phrase?: string }> = {
 const ROLE_TO_BOND: Record<string, BondType> = {
   FRIEND: 'bond_of_trust',
   GODP: 'chosen_family',
+}
+
+function phraseToBondType(phrase: string): BondType {
+  const lower = phrase.toLowerCase()
+  if (lower.includes('partner') || lower.includes('spouse')) return 'life_partner'
+  if (lower.includes('chosen') || lower.includes('aunt') || lower.includes('uncle'))
+    return 'chosen_family'
+  if (lower.includes('shared') || lower.includes('housemate')) return 'shared_life'
+  return 'chosen_family'
 }
 
 export function bondToAssoLines(bond: Bond, persons: Person[]): string[] {
@@ -69,6 +51,7 @@ export function assoLinesToBond(
   let role = 'OTHER'
   let phrase = ''
   let note = ''
+
   for (const line of lines) {
     const m = line.match(/^(\d+)\s+(\w+)(?:\s+(.*))?$/)
     if (!m) continue
@@ -80,16 +63,16 @@ export function assoLinesToBond(
     else if (level === 3 && tag === 'PHRASE') phrase = value
     else if (level === 2 && tag === 'NOTE') note = value
   }
-  let type: BondType = EXACT_ROLE_MAP[role] ?? (role === 'OTHER' ? phraseToBondType(phrase) : 'bond_of_trust')
+
+  if (!toId) return null
+
   let type: BondType = 'bond_of_trust'
-  if (ROLE_TO_BOND[role]) type = ROLE_TO_BOND[role]
-  else if (role === 'OTHER') {
-    const lower = phrase.toLowerCase()
-    if (lower.includes('partner') || lower.includes('spouse')) type = 'life_partner'
-    else if (lower.includes('chosen') || lower.includes('aunt') || lower.includes('uncle')) type = 'chosen_family'
-    else if (lower.includes('shared') || lower.includes('housemate')) type = 'shared_life'
-    else type = 'chosen_family'
+  if (ROLE_TO_BOND[role]) {
+    type = ROLE_TO_BOND[role]
+  } else if (role === 'OTHER') {
+    type = phraseToBondType(phrase)
   }
+
   return {
     id: idGenerator(),
     from: fromPersonId,
